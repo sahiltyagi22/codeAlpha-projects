@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/mode/javascript/javascript.js"></script>
+  <title>Collaborative Code Editor</title>
+  <style>
+    body { margin: 0; }
+    #editor { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="editor"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Add the ot.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ot/1.0.3/ot.js"></script>
+
+<script>
+  const socket = io();
+  const editor = CodeMirror(document.getElementById('editor'), {
+    mode: 'javascript',
+    lineNumbers: true,
+    theme: 'default',
+  });
+
+  // Initialize the client-side document with the server's document
+  const doc = new ot.TextOperation(editor.getValue());
+  const client = new ot.EditorClient(0, doc, (operation) => {
+    socket.emit('operation', operation);
+  });
+
+  editor.on('change', (cm, change) => {
+    if (change.origin !== 'setValue') {
+      client.applyClient(client.editorAdapter.operationFromCodeMirrorChange(change));
+    }
+  });
+
+  socket.on('operation', (operation) => {
+    client.applyServer(operation);
+  });
+
+  socket.on('cursor-update', (data) => {
+    // Handle cursor updates from other users
+    // You can use this information to display cursors of other users in the editor
+  });
+</script>
+
+  
+</body>
+</html>
